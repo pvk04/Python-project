@@ -1,19 +1,15 @@
 from tkinter import *
 import pymysql
-from config import host, user, password, db_name
+from config import host, user, password, db_name  # Модуль с данными для подключания к бд
 import random
 
-############################################# Functions ################################################################
 
-# Auth
-def registration():
+def registration():  # Функция регистрации в приложении
     login = entry_login.get()
     password = entry_password.get()
     check = True
-    print(login)
-    print(password)
 
-    if login == "" or password == "":
+    if login == "" or password == "":  # Валидация данных для регистрации
         error_label["text"] = 'Заполните все поля!'
         check = False
     elif " " in login:
@@ -34,7 +30,7 @@ def registration():
                 error_label["text"] = 'Такой логин занят!'
                 check = False
 
-    if check:
+    if check:  # Добавление записи об аккаунте в бд
         cursor.execute(f"insert into accounts (login, password) values ('{str(login)}', '{str(password)}');")
         connection.commit()
 
@@ -50,12 +46,12 @@ def registration():
         error_label["text"] = 'Вы зарегистрировались'
 
 
-def login():
-    global account_id
+def login():  # Функция авторизации в приложении
+    global account_id # Глобальная переменная, в которую поместится айди аккаунта, в который вошли
     login = entry_login.get()
     password = entry_password.get()
 
-    if login == "" or password == "":
+    if login == "" or password == "":  # Валидация данных при авторизации
         error_label["text"] = 'Заполните все поля!'
     if login != "" and password != "":
         cursor.execute("SELECT * FROM accounts;")
@@ -72,11 +68,13 @@ def login():
         pass
 
 
-def main_menu():
+def main_menu():  # Функция, отрисовыващая главное меню
+    # Удаление всех элементов с виджета root
     list = root.grid_slaves()
     for elem in list:
         elem.destroy()
 
+    # Конфигурация виджета
     for i in range(5):
         root.grid_columnconfigure(i, minsize=100)
     root.rowconfigure(0, minsize=100)
@@ -86,6 +84,7 @@ def main_menu():
     root.title("Главное меню")
     root["bg"] = "white"
 
+    # Отрисовка меню
     menu_lab = Label(root, text="МЕНЮ", bg="white", font=("Montserrat", 20))
     menu_lab.grid(row=0, column=1, columnspan=3, stick='we')
 
@@ -102,28 +101,39 @@ def main_menu():
     button_rules.grid(row=4, column=1, columnspan=3, stick='we')
 
 
-def play():
-    global found_letters
-    global not_match_letters
+def play():  # Функция отрисовки виждета игры
+    global found_letters  # Массив с найденными буквами
+    global not_match_letters  # Массив с лишними буквами
+    global attempts_num  # Количество попыток
+    attempts_num = 5
     found_letters = []
     not_match_letters = []
 
     root.title("Игра")
+
+    # Очистка виджета root
     list = root.grid_slaves()
     for elem in list:
         elem.destroy()
+
     root["bg"] = "grey"
 
-    words_file = open("words.txt", "r", encoding="utf-8") # Открытие файла и считываение слов
+    # Открытие файла и считываение слов
+    words_file = open("words.txt", "r", encoding="utf-8")
     words = words_file.read().split(" ")
-    random_word = words[random.randint(0, len(words) - 1)]
+    random_word = words[random.randint(0, len(words) - 1)]  # Загаданное слово
     print("Загаданное слово: " + random_word)
 
+    # Конфигурация виджета
+    for i in range(5):
+        root.grid_columnconfigure(i, minsize=90)
+    for i in range(8):
+        root.grid_rowconfigure(i, minsize=55)
+
+    # Отрисовка виджета игры
     lab1 = Label(root, text="Введите слово:", font=("Montserrat", 11), bg='grey')
     lab1.grid(row=0, column=1, columnspan=2, sticky='ws')
 
-    global attempts_num
-    attempts_num = 5
     lab2 = Label(root, text=f"Попытки: {attempts_num}", font=("Montserrat", 11), bg='grey')
     lab2.grid(row=0, column=3, sticky='se')
 
@@ -146,19 +156,11 @@ def play():
     button_try = Button(root, text="Проверить", font=("Montserrat", 12), command=lambda: check_word(entry_word, random_word, words, lab_err, lab2, letters, letters_not_match))
     button_try.grid(row=6, column=1, columnspan=3, sticky='we', pady=10)
 
-    lab_err = Label(root, text="", bg='grey', fg='red', font=("Montserrat", 10))
+    lab_err = Label(root, text="", bg='grey', fg='white', font=("Montserrat", 10))
     lab_err.grid(row=7, column=0, columnspan=5)
 
-    root.grid_columnconfigure(0, minsize=90)
-    root.grid_columnconfigure(1, minsize=90)
-    root.grid_columnconfigure(2, minsize=90)
-    root.grid_columnconfigure(3, minsize=90)
-    root.grid_columnconfigure(4, minsize=90)
-    for i in range(8):
-        root.grid_rowconfigure(i, minsize=55)
 
-
-def char_limit(event, entry, count):
+def char_limit(event, entry, count):  # Функция, позволяющая лимитировать ввод символов в поле Entry
     keys = [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 189, 187, 81, 87, 69, 82, 84, 89, 85, 73, 79, 80, 219, 221, 220, 65,
             83, 68, 70, 71, 72, 74, 75, 76, 186, 222, 90, 88, 67, 86, 66, 78, 77, 188, 190, 191, 192]
     for key in keys:
@@ -166,20 +168,23 @@ def char_limit(event, entry, count):
             entry.delete(count, END)
 
 
-def check_word(entry, solve, arr, err, attempts_lab, label, label2):
-    global attempts_num
-    global found_letters
-    global not_match_letters
+def check_word(entry, solve, arr, err, attempts_lab, label, label2):  # Функция проверки введенного пользователем слова
+    global attempts_num  # Количество попыток
+    global found_letters  # Найденные буквы
+    global not_match_letters  # Лишние буквы
+
+    # Вспомогательные переменные
     users_word = entry.get().lower()
     solve = solve.lower()
     contains = False
+
     err["text"] = ""
+    err["bg"] = "grey"
     label["text"] = ""
     label2["text"] = ""
     word_for_check = ""
 
-    if users_word == solve and attempts_num != 0:
-
+    if users_word == solve and attempts_num != 0:  # Если пользователь угадал слово
         cursor.execute(f"update account_info set total_solved = total_solved + 1 where account = {account_id};")
         connection.commit()
 
@@ -190,98 +195,106 @@ def check_word(entry, solve, arr, err, attempts_lab, label, label2):
         for elem in list:
             elem.destroy()
 
-        lab = Label(root, text="Вы угадали!", font=("Montserrat", 20))
+        # Отрисовка окна победы
+        root["bg"] = "white"
+        lab = Label(root, text="Вы угадали!", font=("Montserrat", 20), bg="white")
         lab.grid(row=0, column=1, columnspan=3)
 
-        lab1 = Label(root, text=f"Вы получаете: {attempts_num*10} очков", font=("Montserrat", 14))
+        lab1 = Label(root, text=f"Вы получаете: {attempts_num*10} очков", font=("Montserrat", 14), bg="white")
         lab1.grid(row=1, column=1, columnspan=3, sticky='we')
 
         button_play_again = Button(root, text="Играть снова", font=("Montserrat", 14), command=play)
-        button_play_again.grid(row=2, column=2, pady=10)
+        button_play_again.grid(row=2, column=2, pady=100)
 
         button_menu = Button(root, text="Меню", font=("Montserrat", 14), command=main_menu)
         button_menu.grid(row=3, column=2, pady=10)
-    elif attempts_num == 0:
+    elif attempts_num == 0:  # Закончились попытки
         list = root.grid_slaves()
         for elem in list:
             elem.destroy()
 
-        lab = Label(root, text="Попытки закончились!", font=("Montserrat", 20))
+        # Отрисовка окна поражения
+        root["bg"] = "white"
+        lab = Label(root, text="Попытки закончились!", font=("Montserrat", 20), bg="dark red", fg="white")
         lab.grid(row=0, column=1, columnspan=3)
 
-        lab1 = Label(root, text=f"Загаданное слово: {solve}", font=("Montserrat", 14))
+        lab1 = Label(root, text=f"Загаданное слово: {solve}", font=("Montserrat", 14), bg="white")
         lab1.grid(row=1, column=1, columnspan=3, sticky='we')
 
         button_play_again = Button(root, text="Играть снова", font=("Montserrat", 14), command=play)
-        button_play_again.grid(row=2, column=2, pady=10)
+        button_play_again.grid(row=2, column=2, pady=100)
 
         button_menu = Button(root, text="Меню", font=("Montserrat", 14), command=main_menu)
         button_menu.grid(row=3, column=2, pady=10)
-    else:
+    else:  # Валидация введенного пользователем слова
         for elem in arr:
             if users_word == elem.lower():
                 contains = True
                 word_for_check = elem.lower()
                 break
 
-    if contains:
+    if contains:  # Проверка слова после прохождения валидации
         for let in range(len(solve)):
-            if word_for_check[let] in solve:
-                print("Буква подошла: " + word_for_check[let])
+            if word_for_check[let] in solve:  # Если есть одинаковые буквы
                 contains_status = True
                 for letter in found_letters:
-                    if letter == word_for_check[let]:
+                    if letter == word_for_check[let]:  # Есть ли в массие эти буквы
                         contains_status = False
                 if contains_status:
-                    found_letters.append(word_for_check[let])
-            if word_for_check[let] not in solve:
-                print("Буква не подошла: " + word_for_check[let])
+                    found_letters.append(word_for_check[let])  # Добавление новых букв в массив найденных букв
+            if word_for_check[let] not in solve:  # Одинаковых букв нет
                 contains_status = True
                 for letter in not_match_letters:
-                    if letter == word_for_check[let]:
+                    if letter == word_for_check[let]:  # Есть ли в массиве эти буквы
                         contains_status = False
                 if contains_status:
-                    not_match_letters.append(word_for_check[let])
-        attempts_num -= 1
-    else:
+                    not_match_letters.append(word_for_check[let])  # Добавление новых букв в массив лишних букв
+        attempts_num -= 1  # Уменьшение числа попыток
+    else:  # Слово не прошло валидацию
         if len(users_word) < 5:
+            err["bg"] = "dark red"
             err["text"] = "Введите слово из 5 букв"
         else:
+            err["bg"] = "dark red"
             err["text"] = "Такого слова нет в нашем словаре"
 
-    for letter in found_letters:
+    for letter in found_letters:  # Отрисовка найденных букв
         label["text"] += letter
 
-    for letter in not_match_letters:
+    for letter in not_match_letters:  # Отрисовка лишних букв
         label2["text"] += letter
 
-    attempts_lab["text"] = f"Попыток: {attempts_num}"
+    attempts_lab["text"] = f"Попыток: {attempts_num}"  # Отрисовка числа попыток
 
 
-def open_leaderboard():
+def open_leaderboard():  # Функция открытия таблицы лидеров
+    # Создание окна Toplevel и скрытие виджета root
     root.withdraw()
     leaderboard = Toplevel(root)
     leaderboard.title("Правила")
+    leaderboard.resizable(width=False, height=False)
+    leaderboard.title("Таблица лидеров")
+
+    # Расположение окна по середине экрана
     w = root.winfo_screenwidth()
     h = root.winfo_screenheight()
     w = w // 2
     h = h // 2
     leaderboard.geometry(f'500x450+{w - 250}+{h - 225}')
-    leaderboard.resizable(width=False, height=False)
-    leaderboard.title("Таблица лидеров")
 
+    # Конфигурация виджета
     for i in range(3):
         leaderboard.grid_columnconfigure(i, minsize=150, weight=1)
-
     for i in range(7):
         leaderboard.rowconfigure(i, minsize=20, weight=1)
 
+    # Отрисовка
     header = Label(leaderboard, font=("Montserrat", 14), text="ТОП 5:")
     header.grid(row=0, column=1)
 
-    cursor.execute("select * from account_info order by spend_points desc limit 5;")
+    cursor.execute("select * from account_info order by spend_points desc limit 5;")  # Запрос на топ 5 лучщих игроков по количеству очков
     leaderboard_top = cursor.fetchall()
-    row_num = 1
+    row_num = 1  # Вспомогательная переменная
     for elem in leaderboard_top:
         cursor.execute(f"select login from accounts where idaccount = {elem['account']}")
         name = cursor.fetchall()
@@ -294,17 +307,21 @@ def open_leaderboard():
     menu_button.grid(row=7, column=1)
 
 
-def open_rules():
+def open_rules():  # Функция открытия правил
+    # Создание окна Toplevel и скрытие root
     root.withdraw()
     rules = Toplevel(root)
     rules.title("Правила")
+    rules.resizable(width=False, height=False)
+
+    # Расположение окна по середине экрана
     w = root.winfo_screenwidth()
     h = root.winfo_screenheight()
     w = w // 2
     h = h // 2
     rules.geometry(f'500x450+{w - 250}+{h - 225}')
-    rules.resizable(width=False, height=False)
 
+    # Отрисовка
     rules_lab = Label(rules, font=("Montserrat", 14), wraplength=450, justify="left")
     rules_lab["text"] = "Игра загадывает слово из 5 букв и вам нужно его отгадать. " \
                         "Вы должны ввести слово из 5 букв. " \
@@ -317,26 +334,31 @@ def open_rules():
     button_back.pack(side=BOTTOM, pady=10)
 
 
-def open_account():
+def open_account():  # Функция открытия информации об аккаунте
+    # Создание окна Toplevel и скрытие root
     root.withdraw()
     account = Toplevel(root)
     account.title("Аккаунт")
+    account.resizable(width=False, height=False)
+
+    # Расположение окна по середине экрана
     w = root.winfo_screenwidth()
     h = root.winfo_screenheight()
     w = w // 2
     h = h // 2
     account.geometry(f'500x450+{w - 250}+{h - 225}')
-    account.resizable(width=False, height=False)
 
+    # Конфигурация виджета
     for i in range(3):
         account.grid_columnconfigure(i, minsize=150, weight=1)
 
-    cursor.execute(f"select login, password from accounts where idaccount = {account_id}")
+    cursor.execute(f"select login from accounts where idaccount = {account_id}")  # Запрос на получение данных авторизированного аккаунта
     account_auth = cursor.fetchall()
 
-    cursor.execute(f"select total_solved, spend_points from account_info where account = {account_id}")
+    cursor.execute(f"select total_solved, spend_points from account_info where account = {account_id}")  # Запрос на получение данных об аккаунте
     account_info = cursor.fetchall()
 
+    # Отрисовка
     head_lab = Label(account, font=("Montserrat", 14), text="Мой аккаунт")
     head_lab.grid(row=0, column=0, columnspan=3, sticky='we', pady=20)
     error_label = Label(account, font=("Montserrat", 10), text="", fg="red")
@@ -370,14 +392,16 @@ def open_account():
     button_back.grid(row=7, column=1, pady=5)
 
 
-def change_password(old, new, lab):
+def change_password(old, new, lab):  # Функция смены пароля
+    # Вспомогательные переменные
     check = True
     lab["text"] = ""
     lab["fg"] = "red"
-    cursor.execute(f"select password from accounts where idaccount = {account_id}")
+
+    cursor.execute(f"select password from accounts where idaccount = {account_id}")  # Запрос на получение текущего пароля
     old_pass = cursor.fetchall()
-    print(old_pass)
-    if old == "" or new == "":
+
+    if old == "" or new == "":  # Валидация при изменении пароля
         check = False
         lab["text"] = "Заполните все поля!"
     elif " " in new:
@@ -390,9 +414,9 @@ def change_password(old, new, lab):
         check = False
         lab["text"] = "Старый и новый пароли не должны совпадать"
 
-    if check:
+    if check:  # Изменение пароля
          if old_pass[0]["password"] == old:
-             cursor.execute(f"update accounts set password = '{new}' where idaccount = {account_id}")
+             cursor.execute(f"update accounts set password = '{new}' where idaccount = {account_id}")  # Запрос в бд на изменение пароля
              connection.commit()
              lab["fg"] = "green"
              lab["text"] = "Успешно!"
@@ -400,63 +424,69 @@ def change_password(old, new, lab):
              lab["text"] = "Неправильный старый пароль"
 
 
-def back(window, global_win):
+def back(window, global_win):  # Функция закрытия окна Toplevel
     window.destroy()
     global_win.deiconify()
 
-################################################### MYSQL ##############################################################
-
-try:
-    connection = pymysql.connect(
-        host=host,
-        port=3306,
-        user=user,
-        password=password,
-        database=db_name,
-        cursorclass=pymysql.cursors.DictCursor
-    )
-    print("Successfully connected...")
-
-    try:
-        cursor = connection.cursor()
-        print("Cursor created...")
-    except Exception as ex:
-        print("Failed to create cursor...")
-        print(ex)
-except Exception as ex:
-    print("Connection failed...")
-    print(ex)
-
-##################################################### GUI ##############################################################
 
 if __name__ == "__main__":
-    attempts_num = 5
-    found_letters = []
-    not_match_letters = []
+    # Авторизация и подключение к базе данных
+    try:
+        connection = pymysql.connect(
+            host=host,
+            port=3306,
+            user=user,
+            password=password,
+            database=db_name,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        print("Successfully connected...")
 
+        try:
+            cursor = connection.cursor()
+            print("Cursor created...")
+        except Exception as ex:
+            print("Failed to create cursor...")
+            print(ex)
+    except Exception as ex:
+        print("Connection failed...")
+        print(ex)
+
+    # Вспомогательные переменные
+    attempts_num = 5
+    found_letters = []  # Найденные буквы
+    not_match_letters = []  # Лищние буквы
+
+    # Создание главного виджета root
     root = Tk()
-    w = root.winfo_screenwidth()
-    h = root.winfo_screenheight()
-    w = w // 2  # середина экрана
-    h = h // 2
-    root.geometry(f'500x450+{w - 250}+{h - 225}')
     root.resizable(width=False, height=False)
 
-    main_menu()
+    # Расположение окна по середине экрана
+    w = root.winfo_screenwidth()
+    h = root.winfo_screenheight()
+    w = w // 2
+    h = h // 2
+    root.geometry(f'500x450+{w - 250}+{h - 225}')
 
-    # Auth
+    main_menu()  # Вызов функции отрисовки меню
+
+    # Создание окна вторизации
     auth = Toplevel(root)
+    auth.title("Авторизация")
+    auth.resizable(width=False, height=False)
+    auth["bg"] = "white"
+
+    # Расположение по середине экрана
     w = root.winfo_screenwidth()
     h = root.winfo_screenheight()
     w = w//2
     h = h//2
     auth.geometry(f'400x200+{w-200}+{h-100}')
-    auth.title("Авторизация")
-    auth.resizable(width=False, height=False)
-    auth["bg"] = "white"
 
-    account_id = 0
+    # Вспомогательная переменная
+    account_id = 0  # После авторизации записывается айди аккаунта для дальнейшей работы
 
+    # Отрисовка
     auth_lab1 = Label(auth, text="Войдите или зарегистрируйтесь", bg="white", font=("Montserrat", 12))
     auth_lab1.grid(row=0, column=0, columnspan=4)
 
@@ -479,13 +509,12 @@ if __name__ == "__main__":
     register_btn = Button(auth, text="Регистрация", font=("Montserrat", 12), bg="blue", fg="yellow", command=registration)
     register_btn.grid(row=7, column=2)
 
-    auth.grid_columnconfigure(0, minsize=100)
-    auth.grid_columnconfigure(1, minsize=100)
-    auth.grid_columnconfigure(2, minsize=100)
-    auth.grid_columnconfigure(3, minsize=100)
+    # Конфигурация виждета
+    for i in range(4):
+        auth.grid_columnconfigure(i, minsize=100)
+    for i in range(1, 3):
+        auth.rowconfigure(i, minsize=20)
 
-    auth.rowconfigure(1, minsize=20)
-    auth.rowconfigure(2, minsize=20)
-
+    # Скрытие окна root при авторицазии
     root.withdraw()
     root.mainloop()
